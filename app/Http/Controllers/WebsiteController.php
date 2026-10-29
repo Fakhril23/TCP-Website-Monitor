@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Website;
 use App\Imports\WebsiteImport;
+use App\Exports\WebsiteExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class WebsiteController extends Controller
@@ -12,11 +13,26 @@ class WebsiteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $website = Website::all();
-        return view('websites.index', compact('website'));
+    public function index(Request $request)
+{
+    $query = Website::query();
+
+    // Fitur Pencarian HANYA berdasarkan awalan huruf Nama Website
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where('name', 'like', $search . '%');
     }
+
+    // Fitur Filter berdasarkan Status (Online/Offline)
+    if ($request->filled('status')) {
+        $query->where('status', $request->status);
+    }
+
+    // Ambil data dengan pagination 20 per halaman dan pertahankan query string
+    $website = $query->paginate(20)->withQueryString();
+
+    return view('websites.index', compact('website'));
+}
 
     /**
      * Show the form for creating a new resource.
@@ -30,39 +46,41 @@ class WebsiteController extends Controller
     /**
      * Store a newly created resource in storage.*/
     public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|array',
-        'url' => 'required|array',
-        'name.*' => 'required|string',
-        'url.*' => 'required|string',
-    ]);
-
-    foreach ($request->name as $index => $name) {
-
-        Website::create([
-            'name' => $name,
-            'url' => $request->url[$index],
-            'status_http' => 'Belum Dicek',
-            'status_https' => 'Belum Dicek',
-            'status' => 'Belum Dicek',
+    {
+        $request->validate([
+            'name' => 'required|array',
+            'url' => 'required|array',
+            'name.*' => 'required|string',
+            'url.*' => 'required|string',
         ]);
+
+        foreach ($request->name as $index => $name) {
+
+            Website::create([
+                'name' => $name,
+                'url' => $request->url[$index],
+                'status_http' => 'Belum Dicek',
+                'status_https' => 'Belum Dicek',
+                'status' => 'Belum Dicek',
+            ]);
+        }
+
+        return redirect()->route('websites.index');
     }
 
-    return redirect()->route('websites.index');
-}
-public function import(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,xls,csv|max:5120',
-    ]);
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:5120',
+        ]);
 
-    Excel::import(new WebsiteImport, $request->file('file'));
+        Excel::import(new WebsiteImport, $request->file('file'));
 
-    return redirect()
-        ->route('websites.index')
-        ->with('success', 'Data website berhasil diimport.');
-}
+        return redirect()
+            ->route('websites.index')
+            ->with('success', 'Data website berhasil diimport.');
+    }
+
     /**
      * Display the specified resource.
      */
@@ -99,5 +117,10 @@ public function import(Request $request)
         return redirect()->route('websites.index');
 
         //
+    }
+    public function export()
+    {
+        return Excel::download(new WebsiteExport, 'daftar-website.xlsx');
+
     }
 }

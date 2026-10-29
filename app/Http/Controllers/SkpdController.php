@@ -10,16 +10,27 @@ class SkpdController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil 20 hasil testing paling baru per website untuk bahan grafik
-        $websites = Website::with(['testings' => function ($query) {
+        $query = Website::with(['testings' => function ($query) {
             $query->latest()->limit(20);
-        }])->get();
+        }]);
 
-        // Siapkan data grafik: label waktu, response time, dan warna titik (hijau = up, merah = down)
-        // CATATAN: nama kolom di bawah ini (status, response_time, created_at) adalah ASUMSI.
-        // Sesuaikan dengan nama kolom asli di tabel/model Testing kamu kalau berbeda.
+        // Fitur Pencarian berdasarkan awalan huruf Nama Website
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', $search . '%');
+        }
+
+        // Fitur Filter berdasarkan Status (Online/Offline)
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Ambil 10 website per halaman dan pertahankan query string URL
+        $websites = $query->paginate(10)->withQueryString();
+
+        // Siapkan data grafik
         $websites->each(function ($website) {
             $testings = $website->testings->reverse()->values(); // urut lama -> baru
 
@@ -41,51 +52,11 @@ class SkpdController extends Controller
         return view('skpds.index', compact('websites'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    // Method lainnya dibiarkan seperti semula ...
+    public function create() {}
+    public function store(Request $request) {}
+    public function show(string $id) {}
+    public function edit(string $id) {}
+    public function update(Request $request, string $id) {}
+    public function destroy(string $id) {}
 }

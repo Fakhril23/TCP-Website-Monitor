@@ -12,9 +12,15 @@ Route::get('/', function () {
 
 Route::post('/websites/import', [WebsiteController::class, 'import'])
     ->name('websites.import');
+Route::get('/websites/export', [WebsiteController::class, 'export'])->name('websites.export');
+
+// Route resource yang sudah ada sebelumnya
+Route::resource('websites', WebsiteController::class);
+
 
 Route::resource('websites', WebsiteController::class);
 Route::resource('websites', WebsiteController::class);
+
 
 // SKPD
 Route::resource('skpds', SkpdController::class);

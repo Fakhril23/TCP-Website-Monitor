@@ -7,21 +7,53 @@
 @section('content')
 
 <div class="page-toolbar">
-    <a href="{{ route('websites.create') }}" class="btn btn--primary">+ Tambah Website</a>
+    <div class="toolbar-left">
+        <a href="{{ route('websites.create') }}" class="btn btn--primary">+ Tambah Website</a>
+    </div>
 
-    <form action="{{ route('websites.import') }}"
-          method="POST"
-          enctype="multipart/form-data"
-          class="import-form">
+    <div class="toolbar-right" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Tombol Export Excel -->
+        <a href="{{ route('websites.export') }}" class="btn btn--ghost">Export Excel</a>
 
-        @csrf
+        <form action="{{ route('websites.import') }}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="import-form">
+            @csrf
+            <label class="file-input">
+                <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
+                <span>Pilih file Excel/CSV</span>
+            </label>
+            <button type="submit" class="btn btn--ghost">Import Excel</button>
+        </form>
+    </div>
+</div>
 
-        <label class="file-input">
-            <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
-            <span>Pilih file Excel/CSV</span>
-        </label>
+<!-- Form Filter & Pencarian -->
+<div class="filter-toolbar">
+    <form action="{{ route('websites.index') }}" method="GET" class="search-filter-form">
+        <div class="search-group">
+            <input type="text"
+                   name="search"
+                   value="{{ request('search') }}"
+                   placeholder="Cari nama website"
+                   class="form-control">
+        </div>
 
-        <button type="submit" class="btn btn--ghost">Import Excel</button>
+        <div class="filter-group">
+            <select name="status" class="form-control" onchange="this.form.submit()">
+                <option value="">Semua Status</option>
+                <option value="Healthy" {{ request('status') == 'Healthy' ? 'selected' : '' }}>Online (Healthy)</option>
+                <option value="Down" {{ request('status') == 'Down' ? 'selected' : '' }}>Offline (Down)</option>
+                <option value="Partial" {{ request('status') == 'Partial' ? 'selected' : '' }}>Partial</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn--ghost">Cari</button>
+
+        @if(request('search') || request('status'))
+            <a href="{{ route('websites.index') }}" class="btn btn--danger btn--small" style="padding: 10px 14px;">Reset</a>
+        @endif
     </form>
 </div>
 
@@ -61,7 +93,7 @@
                 };
             @endphp
             <tr>
-                <td>{{ $loop->iteration }}</td>
+                <td>{{ $website->firstItem() + $loop->index }}</td>
                 <td class="cell-strong">{{ $site->name }}</td>
                 <td class="cell-mono">{{ $site->url }}</td>
                 <td class="text-center">{{ $site->status_http }}</td>
@@ -90,11 +122,18 @@
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="empty-row">Belum ada website yang ditambahkan.</td>
+                <td colspan="8" class="empty-row">Tidak ada website yang ditemukan.</td>
             </tr>
         @endforelse
         </tbody>
     </table>
+</div>
+
+<!-- Navigasi Pagination -->
+<div class="pagination-container">
+    <nav>
+        {{ $website->links() }}
+    </nav>
 </div>
 
 @endsection
@@ -107,7 +146,35 @@
         justify-content:space-between;
         gap:16px;
         flex-wrap:wrap;
-        margin-bottom:22px;
+        margin-bottom:16px;
+    }
+
+    .filter-toolbar{
+        margin-bottom:20px;
+    }
+
+    .search-filter-form{
+        display:flex;
+        gap:12px;
+        flex-wrap:wrap;
+        align-items:center;
+    }
+
+    .search-group input.form-control,
+    .filter-group select.form-control{
+        padding:9px 14px;
+        border:1px solid var(--border, #cbd5e1);
+        border-radius:8px;
+        font-size:13px;
+        background:#fff;
+        color:var(--text, #1e293b);
+        outline:none;
+        min-width:220px;
+    }
+
+    .search-group input.form-control:focus,
+    .filter-group select.form-control:focus{
+        border-color:var(--primary, #0ea5e9);
     }
 
     .import-form{
@@ -151,10 +218,51 @@
 
     .inline-form{ display:inline; }
 
+    /* Styling Pagination yang Rapi di Tengah */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        width: 100%;
+    }
+
+    .pagination-container nav {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    .pagination-container nav > div:first-child,
+    .pagination-container .flex.justify-between.flex-1.sm\:hidden {
+        display: none !important;
+    }
+
+    .pagination-container .hidden.sm\:flex-1.sm\:flex.sm\:items-center.sm\:justify-between {
+        display: flex !important;
+        justify-content: center !important;
+        width: 100%;
+    }
+
+    .pagination-container nav svg {
+        width: 16px;
+        height: 16px;
+    }
+
     @media (max-width: 640px){
         .page-toolbar{
             flex-direction:column;
             align-items:flex-start;
+        }
+        .search-filter-form{
+            flex-direction:column;
+            align-items:stretch;
+        }
+        .search-group input.form-control,
+        .filter-group select.form-control{
+            width:100%;
         }
     }
 </style>
